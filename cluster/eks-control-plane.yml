@@ -1,0 +1,75 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  EKSIAMRoleName:
+    Type: String
+    Default: 'eks-service-role'
+    Description: The name of the IAM role for the EKS service to assume.
+
+  EKSClusterName:
+    Type: String
+    Default: 'eks-master'
+    Description: The desired name of your AWS EKS Cluster.
+    
+  VpcBlock:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: The CIDR range for the VPC. This should be a valid private (RFC 1918) CIDR range.
+
+  ControlPlaneSecurityGroup:
+    Type: String
+    Default: 'sg-0088fa5a1a52bb65d'
+    Description: The CIDR range for the VPC. This should be a valid private (RFC 1918) CIDR range.
+
+  PublicSubnet01:
+    Type: String
+    Default: subnet-092016c6d1d176292
+    Description: CidrBlock for public subnet 01 within the VPC
+
+  PublicSubnet02:
+    Type: String
+    Default: subnet-09fa2dd42abdf0763
+    Description: CidrBlock for public subnet 02 within the VPC
+
+  PrivateSubnet01:
+    Type: String
+    Default: subnet-095788f536308cb67
+    Description: CidrBlock for private subnet 01 within the VPC
+    
+  PrivateSubnet02:
+    Type: String
+    Default: subnet-0a0d5800ee96c1b6b
+    Description: CidrBlock for private subnet 02 within the VPC
+
+Resources:
+  EKSIAMRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - eks.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      RoleName: !Ref EKSIAMRoleName
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+  
+  EKSCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Ref EKSClusterName
+      RoleArn: 'arn:aws:iam::703043637716:role/eks-service-role'
+      ResourcesVpcConfig:
+        SecurityGroupIds:
+        - !Ref ControlPlaneSecurityGroup
+        SubnetIds:
+        - !Ref PublicSubnet01
+        - !Ref PublicSubnet02
+        - !Ref PrivateSubnet01
+        - !Ref PrivateSubnet02
+    DependsOn: [EKSIAMRole]
